@@ -6,14 +6,16 @@
   <title>Document</title>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <button id="button">update</button>
+  </div>
 </body>
 <script src="Didact.js"></script>
 <script>
   // JSX: (
-  //   <div>
+  //   <div id="foo">
   //     <a href="https://pomb.us/build-your-own-react/">bar</a>
-  //     <b/>
+  //     <b onClick={() => console.log('hello baz')}>baz</b>
   //   </div>
   // )
   // ->
@@ -36,7 +38,14 @@
   //     }, {
   //       "type": "b",
   //       "props": {
-  //         "children": []
+  //         "onClick": () => console.log('hello baz'),
+  //         "children": [{
+  //            "type": "TEXT_ELEMENT",
+  //            "props": {
+  //              "nodeValue": "baz",
+  //              "children": []
+  //            }
+  //          }]
   //       }
   //     }]
   //   }
@@ -61,7 +70,7 @@
   //       sibling: {
   //         dom: b#undefined,
   //         parent: { type: 'div', props: {...}, parent: {...}, dom: div#foo, child: {...} },
-  //         props: { children: Array(0) },
+  //         props: { onClick: Function, children: Array(1) },
   //         type: 'b',
   //       },
   //     },
@@ -71,10 +80,25 @@
     'div',
     { id: 'foo' },
     Didact.createElement('a', { href: 'https://pomb.us/build-your-own-react/' }, 'bar'),
-    Didact.createElement('b'),
+    Didact.createElement('b', { onClick: () => console.log('hello baz') }, 'baz'),
   );
 
   const container = document.getElementById('root');
   Didact.render(element, container);
+</script>
+
+<script>
+  const btn = document.getElementById('button');
+
+  btn.addEventListener('click', () => {
+    const element = Didact.createElement(
+      'div',
+      { id: 'foo' },
+      Didact.createElement('a', { onClick: () => console.log('hello') }, 'baz'),
+      Didact.createElement('b', null, 'click'),
+    );
+
+    Didact.render(element, container);
+  });
 </script>
 </html>
