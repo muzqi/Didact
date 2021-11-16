@@ -1,10 +1,12 @@
-const UPDATE = Symbol();
-const PLACEMENT = Symbol();
-const DELETION = Symbol();
+const UPDATE = Symbol('UPDATE');
+const PLACEMENT = Symbol('PLACEMENT');
+const DELETION = Symbol('DELETION');
+
+const TEXT_ELEMENT = Symbol('TEXT_ELEMENT');
 
 function createTextElement(text) {
   return {
-    type: 'TEXT_ELEMENT',
+    type: TEXT_ELEMENT,
     props: {
       nodeValue: text,
       children: [],
@@ -32,7 +34,7 @@ const isNew = (prev, next) => key => prev[key] !== next[key];/*  */// 是否是�
 const isGone = (prev, next) => key => !(key in next);/*          */// 是否是一个遗弃的 DOM Attribute。依据：将历史属性的 key 在新的 props 里遍历，查询是否存在
 
 function createDom(fiber) {
-  const dom = fiber.type === 'TEXT_ELEMENT'
+  const dom = fiber.type === TEXT_ELEMENT
     ? document.createTextNode('')
     : document.createElement(fiber.type);
 
@@ -45,7 +47,7 @@ function createDom(fiber) {
       if (isEvent(name)) {/*   */// 设置事件绑定
         const eventType = name.toLowerCase().substring(2);
         dom.addEventListener(eventType, fiber.props[name]);
-      } else {/*         */// 设置 DOM Attribute
+      } else {/*               */// 设置 DOM Attribute
         dom[name] = fiber.props[name];
       }
     });
@@ -100,7 +102,24 @@ function commitWork(fiber) {
   if (!fiber) {
     return;
   }
-  const domParent = fiber.parent.dom;
+
+  // FunctionComponent 与 HostComponent 数据结构有所不同
+  //
+  // HostComponent:
+  // 在 updateHostComponent 中，`fiber.dom = createDom(fiber);` 语句保证了每个 fiber 节点都存在 dom 属性
+  // 因此 domParent 永远有值，往后的 DOM 增删操作，都会由 domParent.appendChild 或 domParent.removeChild 来执行，所以保证 domParent 节点存在，是非常必要的
+  //
+  // FunctionComponent
+  // 与 HostComponent 不同的是，FunctionComponent 首次进入 performUnitOfWork function 时，其 type 是一个函数，
+  // 这就决定了 FunctionComponent 的第一个 Fiber 节点，是不存在 dom 属性的（除非在 updateFunctionComponent 中造一个 <div> 包裹），
+  // 如果不做处理，当遍历到 FunctionComponent 下一个子节点时，就会出现 domParent = null，导致操作 dom 节点失败；
+  // 这里使用 `while (!domParentFiber.dom)` 的目的，就是为了将 FunctionComponent 的根节点，赋值到 #root 上。
+  let domParentFiber = fiber.parent;
+  while (!domParentFiber.dom) {
+    domParentFiber = domParentFiber.parent;
+  }
+
+  const domParent = domParentFiber.dom;
 
   if (
     fiber.effectTag === PLACEMENT &&
@@ -113,11 +132,20 @@ function commitWork(fiber) {
   ) {
     updateDom(fiber.dom, fiber.alertnate.props, fiber.props);
   } else if (fiber.effectTag === DELETION) {
-    domParent.removeChild(fiber.dom);
+    commitDeletion(fiber, domParent);
   }
 
   commitWork(fiber.child);
   commitWork(fiber.sibling);
+}
+
+function commitDeletion(fiber, domParent) {
+  // 当删除 FunctionComponent 根节点时，fiber.dom 是不存在的
+  if (fiber.dom) {
+    domParent.removeChild(fiber.dom);
+  } else {
+    commitDeletion(fiber.child, domParent);
+  }
 }
 
 function render(element, container) {
@@ -158,23 +186,24 @@ function workLoop(deedline) {
 requestIdleCallback(workLoop);
 
 function performUnitOfWork(fiber) {
-  // 1 如果传入 fiber.dom 为空，则创建并挂载
-  if (!fiber.dom) {
-    fiber.dom = createDom(fiber);
+  // 1 判断是 FunctionComponent(函数组件) 还是 HostComponent(原生组件)
+  //   FunctionComponent 会在第一次遍历，进入 updateFunctionComponent function 逻辑，
+  //   其往后的遍历都会进入 updateHostComponent function 中。
+  const isFunctionComponent = fiber.type instanceof Function;
+  if (isFunctionComponent) {
+    updateFunctionComponent(fiber);
+  } else {
+    updateHostComponent(fiber);
   }
 
-  // 2 遍历 fiber 节点下的所有 children，并创建新的 fiber 节点
-  const elements = fiber.props.children;
-  reconcileChildren(fiber, elements);
-
-  // 3.1 当以上循环完成后，就将 fiber.child 返回，workLoop 方法会执行 `nextUnitOfWork = performUnitOfWork(nextUnitOfWork)`，
-  //     这就进入了下一轮循环。
+  // 2 当以上循环完成后，就将 fiber.child 返回，workLoop 方法会执行 `nextUnitOfWork = performUnitOfWork(nextUnitOfWork)`，
+  //   这就进入了下一轮循环。
   if (fiber.child) {
     return fiber.child;
   }
 
-  // 3.2 如果已经走到了末级节点，即 fiber.child 为空，则从当前 fiber 节点向上查找(nextFiber = nextFiber.parent)，
-  //     每向上一级，查询该级节点是否有 sibling 节点，有则 return，进入该节点遍历，没有则一直向上，直到 nextFiber.parent 为 null，结束遍历
+  // 3 如果已经走到了末级节点，即 fiber.child 为空，则从当前 fiber 节点向上查找(nextFiber = nextFiber.parent)，
+  //   每向上一级，查询该级节点是否有 sibling 节点，有则 return，进入该节点遍历，没有则一直向上，直到 nextFiber.parent 为 null，结束遍历
   let nextFiber = fiber;
   while (nextFiber) {
     if (nextFiber.sibling) {
@@ -183,6 +212,23 @@ function performUnitOfWork(fiber) {
 
     nextFiber = nextFiber.parent;
   }
+}
+
+function updateFunctionComponent(fiber) {
+  // 执行函数，得到响应的 elements
+  const children = [fiber.type(fiber.props)];
+  reconcileChildren(fiber, children);
+}
+
+function updateHostComponent(fiber) {
+  // 1 如果传入 fiber.dom 为空，则创建并挂载
+  if (!fiber.dom) {
+    fiber.dom = createDom(fiber);
+  }
+
+  // 2 遍历 fiber 节点下的所有 children，并创建新的 fiber 节点
+  const elements = fiber.props.children;
+  reconcileChildren(fiber, elements);
 }
 
 function reconcileChildren(wipFiber, elements) {

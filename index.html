@@ -6,99 +6,20 @@
   <title>Document</title>
 </head>
 <body>
-  <div id="root">
-    <button id="button">update</button>
-  </div>
+  <div id="root"></div>
 </body>
 <script src="Didact.js"></script>
 <script>
-  // JSX: (
-  //   <div id="foo">
-  //     <a href="https://pomb.us/build-your-own-react/">bar</a>
-  //     <b onClick={() => console.log('hello baz')}>baz</b>
-  //   </div>
-  // )
-  // ->
-  // element: {
-  //   "type": "div",
-  //   "props": {
-  //     "id": "foo",
-  //     "children": [{
-  //       "type": "a",
-  //       "props": {
-  //         "href": "https://pomb.us/build-your-own-react/",
-  //         "children": [{
-  //           "type": "TEXT_ELEMENT",
-  //           "props": {
-  //             "nodeValue": "bar",
-  //             "children": []
-  //           }
-  //         }]
-  //       }
-  //     }, {
-  //       "type": "b",
-  //       "props": {
-  //         "onClick": () => console.log('hello baz'),
-  //         "children": [{
-  //            "type": "TEXT_ELEMENT",
-  //            "props": {
-  //              "nodeValue": "baz",
-  //              "children": []
-  //            }
-  //          }]
-  //       }
-  //     }]
-  //   }
-  // }
-  // ->
-  // Fiber = {
-  //   dom: div#root,
-  //   props: {
-  //     children: [{...}],
-  //   },
-  //   child: {
-  //     dom: div#foo,
-  //     parent: { dom: div#root, props: {...}, child: {...} },
-  //     props: { id: 'foo', children: Array(2) },
-  //     type: 'div',
-  //     child: {
-  //       type: 'a',
-  //       dom: a#undefined,
-  //       parent: { type: 'div', props: {...}, parent: {...}, dom: div#foo, child: {...} },
-  //       props: { href: '...', children: Array(1) },
-  //       child: { type: 'TEXT_ELEMENT', props: {...}, parent: {...}, dom: text },
-  //       sibling: {
-  //         dom: b#undefined,
-  //         parent: { type: 'div', props: {...}, parent: {...}, dom: div#foo, child: {...} },
-  //         props: { onClick: Function, children: Array(1) },
-  //         type: 'b',
-  //       },
-  //     },
-  //   },
-  // }
-  const element = Didact.createElement(
-    'div',
-    { id: 'foo' },
-    Didact.createElement('a', { href: 'https://pomb.us/build-your-own-react/' }, 'bar'),
-    Didact.createElement('b', { onClick: () => console.log('hello baz') }, 'baz'),
-  );
+  // JSX: const App = props => <h1>Hi {props.name}</h1>;
+  const App = (props) => Didact.createElement('h1', null, 'Hi ', props.name);
 
+  const element = Didact.createElement(App, { name: 'muziq' });
+  // const element = Didact.createElement(
+  //   'div',
+  //   { id: 'foo' },
+  //   Didact.createElement('h1', null, 'Hi muzqi'),
+  // );
   const container = document.getElementById('root');
   Didact.render(element, container);
-</script>
-
-<script>
-  const btn = document.getElementById('button');
-
-  btn.addEventListener('click', () => {
-    const element = Didact.createElement(
-      'div',
-      { id: 'foo' },
-      Didact.createElement('a', { onClick: () => console.log('hello') }, 'baz'),
-      Didact.createElement('b', null, 'click'),
-    );
-
-    Didact.render(element, container);
-  });
 </script>
 </html>
