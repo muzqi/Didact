@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+<script src="Didact.js"></script>
+<script>
+  // JSX: (
+  //   <div>
+  //     <a href="https://pomb.us/build-your-own-react/">bar</a>
+  //     <b/>
+  //   </div>
+  // )
+  // ->
+  // element: {
+  //   "type": "div",
+  //   "props": {
+  //     "id": "foo",
+  //     "children": [{
+  //       "type": "a",
+  //       "props": {
+  //         "href": "https://pomb.us/build-your-own-react/",
+  //         "children": [{
+  //           "type": "TEXT_ELEMENT",
+  //           "props": {
+  //             "nodeValue": "bar",
+  //             "children": []
+  //           }
+  //         }]
+  //       }
+  //     }, {
+  //       "type": "b",
+  //       "props": {
+  //         "children": []
+  //       }
+  //     }]
+  //   }
+  // }
+  // ->
+  // Fiber = {
+  //   dom: div#root,
+  //   props: {
+  //     children: [{...}],
+  //   },
+  //   child: {
+  //     dom: div#foo,
+  //     parent: { dom: div#root, props: {...}, child: {...} },
+  //     props: { id: 'foo', children: Array(2) },
+  //     type: 'div',
+  //     child: {
+  //       type: 'a',
+  //       dom: a#undefined,
+  //       parent: { type: 'div', props: {...}, parent: {...}, dom: div#foo, child: {...} },
+  //       props: { href: '...', children: Array(1) },
+  //       child: { type: 'TEXT_ELEMENT', props: {...}, parent: {...}, dom: text },
+  //       sibling: {
+  //         dom: b#undefined,
+  //         parent: { type: 'div', props: {...}, parent: {...}, dom: div#foo, child: {...} },
+  //         props: { children: Array(0) },
+  //         type: 'b',
+  //       },
+  //     },
+  //   },
+  // }
+  const element = Didact.createElement(
+    'div',
+    { id: 'foo' },
+    Didact.createElement('a', { href: 'https://pomb.us/build-your-own-react/' }, 'bar'),
+    Didact.createElement('b'),
+  );
+
+  const container = document.getElementById('root');
+  Didact.render(element, container);
+</script>
+</html>
