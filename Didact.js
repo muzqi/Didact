@@ -28,29 +28,18 @@ function createElement(type, props, ...children) {
   }
 }
 
-const isEvent = key => key.startsWith('on');/*                   */// 是否是一个绑定事件。依据：是否以 “on” 开头。
-const isProperty = key => key !== 'children' && !isEvent(key);/* */// 是否是一个 DOM Attribute。依据：不包含 `children` 以及绑定事件。
-const isNew = (prev, next) => key => prev[key] !== next[key];/*  */// 是否是一个新的 DOM Attribute。依据：历史属性与新属性不相同。
-const isGone = (prev, next) => key => !(key in next);/*          */// 是否是一个遗弃的 DOM Attribute。依据：将历史属性的 key 在新的 props 里遍历，查询是否存在
+const isEvent = key => key.startsWith('on');/*                                     */// 是否是一个绑定事件。依据：是否以 “on” 开头。
+const isStyle = key => key === 'style';/*                                          */// 是否是一个 Style Attribute。
+const isProperty = key => key !== 'children' && !isEvent(key) && !isStyle(key);/*  */// 是否是一个 DOM Attribute。依据：不包含 `children` 以及绑定事件。
+const isNew = (prev, next) => key => prev[key] !== next[key];/*                    */// 是否是一个新的 DOM Attribute。依据：历史属性与新属性不相同。
+const isGone = (prev, next) => key => !(key in next);/*                            */// 是否是一个遗弃的 DOM Attribute。依据：将历史属性的 key 在新的 props 里遍历，查询是否存在
 
 function createDom(fiber) {
   const dom = fiber.type === TEXT_ELEMENT
     ? document.createTextNode('')
     : document.createElement(fiber.type);
 
-  const _isProperty = key => key !== 'children';
-
-  // 配置 dom attributes
-  Object.keys(fiber.props)
-    .filter(_isProperty)
-    .forEach(name => {
-      if (isEvent(name)) {/*   */// 设置事件绑定
-        const eventType = name.toLowerCase().substring(2);
-        dom.addEventListener(eventType, fiber.props[name]);
-      } else {/*               */// 设置 DOM Attribute
-        dom[name] = fiber.props[name];
-      }
-    });
+  updateDom(dom, {}, fiber.props);
 
   return dom;
 }
@@ -73,6 +62,19 @@ function updateDom(dom, prevProps, nextProps) {
       const eventType = name.toLowerCase().substring(2);
       dom.addEventListener(eventType, nextProps[name]);
     });
+
+  const prevStyle = prevProps.style || {};
+  const nextStyle = nextProps.style || {};
+
+  // 移除旧的 Style Attribute
+  Object.keys(prevStyle)
+    .filter(isGone(prevStyle, nextStyle))
+    .forEach(name => dom.style[name] = '');
+
+  // 设置新的或已变化的 Style Attribute
+  Object.keys(nextStyle)
+    .filter(isNew(prevStyle, nextStyle))
+    .forEach(name => dom.style[name] = nextStyle[name]);
 
   // 移除旧的 DOM Attribute
   Object.keys(prevProps)

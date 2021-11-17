@@ -14,13 +14,19 @@
   const Counter = (props) => {
     const [count, setCount] = Didact.useState(0);
     const [name, setName] = Didact.useState(props.name);
+    const [color, setColor] = Didact.useState('red');
 
     return Didact.createElement(
       'h1',
       {
+        style: {
+          color,
+          backgroundColor: 'blue',
+        },
         onClick: () => {
           setName('muzi');
           setCount(v => v + 1);
+          setColor('yellow');
         },
       },
       'Hi ', `${name}: ${count}`
