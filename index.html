@@ -11,9 +11,23 @@
 <script src="Didact.js"></script>
 <script>
   // JSX: const App = props => <h1>Hi {props.name}</h1>;
-  const App = (props) => Didact.createElement('h1', null, 'Hi ', props.name);
+  const Counter = (props) => {
+    const [count, setCount] = Didact.useState(0);
+    const [name, setName] = Didact.useState(props.name);
 
-  const element = Didact.createElement(App, { name: 'muziq' });
+    return Didact.createElement(
+      'h1',
+      {
+        onClick: () => {
+          setName('muzi');
+          setCount(v => v + 1);
+        },
+      },
+      'Hi ', `${name}: ${count}`
+    );
+  };
+
+  const element = Didact.createElement(Counter, { name: 'baz' });
   // const element = Didact.createElement(
   //   'div',
   //   { id: 'foo' },

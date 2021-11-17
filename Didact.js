@@ -214,10 +214,87 @@ function performUnitOfWork(fiber) {
   }
 }
 
+let wipFiber = null;/*   */// 供 hooks 使用的 work in progress fiber
+let hookIndex = null;/*  */// 当存在多个 hooks 调用时，用来记录下标遍历
+
 function updateFunctionComponent(fiber) {
+  // 初始化 hooks 需要的信息
+  wipFiber = fiber;
+  hookIndex = 0;
+  wipFiber.hooks = [];
+
   // 执行函数，得到响应的 elements
   const children = [fiber.type(fiber.props)];
   reconcileChildren(fiber, children);
+}
+
+function useState(initial) {
+  const oldHook =
+    wipFiber.alertnate &&
+    wipFiber.alertnate.hooks &&
+    wipFiber.alertnate.hooks[hookIndex];
+
+  const hook = {
+    state: oldHook ? oldHook.state : initial,
+    queue: [],
+  };
+
+  const actions = oldHook ? oldHook.queue : [];
+  actions.forEach(action => {
+    typeof action === 'function'
+      ? hook.state = action(hook.state)
+      : hook.state = action;
+  });
+
+  // setState 做了两件事情：
+  // a. 将 action 存入 hook.queue 中
+  // b. 重设 wipRoot nextUnitOfWork deletions 对象，这里就类似调用了 render function，
+  //    因为调用了 render function，并且 nextUnitOfWork 的值也与 currentRoot 保持一致，
+  //    此时就会再次调用 updateFunctionComponent function，并调用 useState function，并通过 oldHook.queue 调用 a 步骤存储的 action。
+  const setState = action => {
+    /**
+     * wipFiber，是 FunctionComponent 在 PLACEMENT 阶段，最终输出的 Fiber。
+     * wipFiber 在 FunctionComponenent PLACEMENT 结束后，并没有被销毁，
+     * 所以，wipFiber.hooks === currentRoot.child.hooks 为 true，
+     * 即，currentRoot.child.hooks[0] === hook 为 true，
+     * 所以这里 hook.queue.push(action) 会直接改变 wipFiber 以及 currentRoot
+     *
+     * @example 数组指针
+     * const hooks = [];
+     * const hook = { state: 'test', queue: [] }
+     * hooks.push(hook)
+     * hook.queue.push(1)
+     * console.log(hooks)
+     * -> [
+     *      {
+     *        state: 'test',
+     *        queue: [1],
+     *      },
+     *    ]
+     *
+     * wipRoot.alertnate = currentRoot，这里将 wipRoot 与 currentRoot 连接，
+     * 当完成 setState 后，Didact 会立即进行 render，并重新执行 updateFunctionComponent -> fiber.type(fiber.props) -> useState，
+     * 当 UPDATE 阶段执行 useState 时，我们就可以从 wipFiber.alertnate.hooks 中取出 queue，并执行 action。
+     */
+    hook.queue.push(action);
+
+    wipRoot = {
+      dom: currentRoot.dom,
+      props: currentRoot.props,
+      alertnate: currentRoot,
+    }
+
+    nextUnitOfWork = wipRoot;
+    deletions = [];
+  }
+
+  /**
+   * 为函数组件挂载 hooks 属性，「应用层」调用 setState 后，会将 action 注入到 hooks 里，
+   * useState 将在下一次迭代，调用这些 actions。
+   */
+  wipFiber.hooks.push(hook);
+  hookIndex++;
+  return [hook.state, setState];
 }
 
 function updateHostComponent(fiber) {
@@ -317,4 +394,4 @@ function reconcileChildren(wipFiber, elements) {
   }
 }
 
-const Didact = { createElement, render };
+const Didact = { createElement, render, useState };
