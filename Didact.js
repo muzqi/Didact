@@ -230,6 +230,8 @@ function updateFunctionComponent(fiber) {
   reconcileChildren(fiber, children);
 }
 
+// TODO: function useEffect(effect, deps) {...}
+
 function useState(initial) {
   const oldHook =
     wipFiber.alertnate &&
