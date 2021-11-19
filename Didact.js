@@ -1,8 +1,8 @@
-const UPDATE = Symbol('UPDATE');
-const PLACEMENT = Symbol('PLACEMENT');
-const DELETION = Symbol('DELETION');
+const UPDATE = /*        */ Symbol('UPDATE');
+const PLACEMENT = /*     */ Symbol('PLACEMENT');
+const DELETION = /*      */ Symbol('DELETION');
 
-const TEXT_ELEMENT = Symbol('TEXT_ELEMENT');
+const TEXT_ELEMENT = /*  */ Symbol('TEXT_ELEMENT');
 
 function createTextElement(text) {
   return {
@@ -111,7 +111,7 @@ function commitWork(fiber) {
   // 在 updateHostComponent 中，`fiber.dom = createDom(fiber);` 语句保证了每个 fiber 节点都存在 dom 属性
   // 因此 domParent 永远有值，往后的 DOM 增删操作，都会由 domParent.appendChild 或 domParent.removeChild 来执行，所以保证 domParent 节点存在，是非常必要的
   //
-  // FunctionComponent
+  // FunctionComponent:
   // 与 HostComponent 不同的是，FunctionComponent 首次进入 performUnitOfWork function 时，其 type 是一个函数，
   // 这就决定了 FunctionComponent 的第一个 Fiber 节点，是不存在 dom 属性的（除非在 updateFunctionComponent 中造一个 <div> 包裹），
   // 如果不做处理，当遍历到 FunctionComponent 下一个子节点时，就会出现 domParent = null，导致操作 dom 节点失败；
@@ -162,10 +162,10 @@ function render(element, container) {
   nextUnitOfWork = wipRoot;
 }
 
-let nextUnitOfWork = null;/* */// 供下一个工作单元使用的 Fiber 节点(performUnitOfWork 调用)
-let currentRoot = null;/*    */// 目前已提交渲染的 Fiber 节点，全量
-let wipRoot = null;/*        */// wip = work in progress 目前正在工作区使用的 Fiber 节点，全量
-let deletions = null;/*      */// 需要删除的 Fiber 节点
+let nextUnitOfWork = /* */ null; // 供下一个工作单元使用的 Fiber 节点(performUnitOfWork 调用)
+let currentRoot = /*    */ null; // 目前已提交渲染的 Fiber 节点，全量
+let wipRoot = /*        */ null; // wip = work in progress 目前正在工作区使用的 Fiber 节点，全量
+let deletions = /*      */ null; // 需要删除的 Fiber 节点
 
 /**
  * 当浏览器有空闲时间时，会执行该方法
